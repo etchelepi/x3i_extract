@@ -1,7 +1,9 @@
 # x3i_extract
-This is a simple script that takes a .xci and breaks it into x3f files
+This is a simple script that takes a .xci and breaks it into x3f files.
 
-Supported OS:
+It's useful if you don't want to manually extract them without spp tools. It's very fast because it does not do any processing. It reads the header, finds the embedded files, and then writes them to disk. This should then be paired with the python xcf_extract or another x3f program inorder to do anything with the extracted files.
+
+Supported OS (As in I tested it):
 1. Windows 10
 2. Linux
 
