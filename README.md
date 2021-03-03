@@ -6,17 +6,22 @@ It's useful if you don't want to manually extract them without spp tools. It's v
 Added additional Functionality:
 
 --input can take a single file, or a GLOB search string or a list of files. 
+
 --tif will if a pointer to x3f_extract is modified can convert to tiffs. By default the X3F's will be erased.
+
 --x3f will preserve the extracted x3F files
 
 To add X3F tools look here in the file at the top:
 
-###############################################################################
-# Global Variables
-###############################################################################
-X3F_EXTRACT_EXE = "" #Please put the path to the x3f Extract tool 
-
-X3F_EXTRACT_ARGS = " -tiff " #This is 16 bit linear TIF
+        ###############################################################################
+        
+        # Global Variables
+        
+        ###############################################################################
+        
+        X3F_EXTRACT_EXE = "" #Please put the path to the x3f Extract tool 
+        
+        X3F_EXTRACT_ARGS = " -tiff " #This is 16 bit linear TIF
 
 Put the full path to the exectuable, and if you want to change what gets run the ARGs needs to be modified.
 
@@ -36,18 +41,19 @@ Example output:
 C:\test_folder> x3i_extract -i *.x3i --tif
 
 ...
+        
+        X3I Extract Utility
+        
+        Version:  bytearray(b'\x00\x01\x00\x00')
+        
+        **** **** **** **** **** **** **** **** **** **** ****
+        
+        Section Identifier   : b'SECf'
+        
+        Directory Version    : bytearray(b'\x00\x00\x01\x00')
 
-X3I Extract Utility
-
-Version:  bytearray(b'\x00\x01\x00\x00')
-
-**** **** **** **** **** **** **** **** **** **** ****
-
-Section Identifier   : b'SECf'
-Directory Version    : bytearray(b'\x00\x00\x01\x00')
-
-**** **** **** **** **** **** **** **** **** **** ****
-Starting Directory Table Extraction for 8 entries
+        **** **** **** **** **** **** **** **** **** **** ****
+        Starting Directory Table Extraction for 8 entries
 
         ENTRY  0 **** **** **** **** **** **** **** ****
                 OFFSET IS: 1440
