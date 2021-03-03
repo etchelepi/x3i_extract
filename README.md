@@ -14,7 +14,8 @@ To add X3F tools look here in the file at the top:
 ###############################################################################
 # Global Variables
 ###############################################################################
-X3F_EXTRACT_EXE = "" #Please put the path to the x3f Extract tool
+X3F_EXTRACT_EXE = "" #Please put the path to the x3f Extract tool 
+
 X3F_EXTRACT_ARGS = " -tiff " #This is 16 bit linear TIF
 
 Put the full path to the exectuable, and if you want to change what gets run the ARGs needs to be modified.
@@ -33,12 +34,18 @@ x3i_extract -i *.x3i --tif
 
 Example output:
 C:\test_folder> x3i_extract -i *.x3i --tif
+
 ...
+
 X3I Extract Utility
+
 Version:  bytearray(b'\x00\x01\x00\x00')
+
 **** **** **** **** **** **** **** **** **** **** ****
+
 Section Identifier   : b'SECf'
 Directory Version    : bytearray(b'\x00\x00\x01\x00')
+
 **** **** **** **** **** **** **** **** **** **** ****
 Starting Directory Table Extraction for 8 entries
 
