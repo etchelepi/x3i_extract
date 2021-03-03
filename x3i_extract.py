@@ -228,11 +228,11 @@ def extract_x3i_file(x3i_file,x3f,tif,verbose):
 def main():
     """ MAIN
     """
-    print("X3I Extract Utility")
+    print("X3I Extract Utility\n")
     
     #Get Arguments
     parser = argparse.ArgumentParser()
-    parser.add_argument('--input','-i',nargs='*',                   help='provide a file or a list of files (GLOB strings allows)')
+    parser.add_argument('--input','-i',nargs='*',required=True,      help='provide a file or a list of files (GLOB strings allows)')
     parser.add_argument('--tif',default=False,action='store_true',  help='Convert images to TIF. This requires the script to have a path to the x3f extract Util')
     parser.add_argument('--x3f',default=False,action='store_true',  help='save the X3F output')
     parser.add_argument('--verbose','-v',default=False,action='store_true',  help='Verbose Output')
@@ -252,12 +252,11 @@ def main():
     else:
         OUT_X3F = True
           
-    print(IN_FILE_LIST)
     #For each X3F provided as input process it
     for f in IN_FILE_LIST:
         extract_x3i_file(f,OUT_X3F,OUT_TIFF,VERBOSE)
         
-    print("All files completed")
+    print("\nAll files completed\n")
         
        
 if __name__ == '__main__':
