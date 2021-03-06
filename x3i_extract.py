@@ -22,9 +22,14 @@ HEADER_UNIQUE_IDENTIFER = 16
 ###############################################################################
 # Global Variables
 ###############################################################################
-X3F_EXTRACT_EXE = "" #Please put the path to the x3f Extract tool
-X3F_EXTRACT_ARGS = " -tiff " #This is 16 bit linear TIF
+X3F_EXTRACT_EXE             = "x3f_extract.exe" #Please put the path to the x3f Extract tool
+X3F_EXTRACT_TIF_ARGS        = " -tiff " #This is 16 bit linear TIF
+X3F_EXTRACT_DNG_ARGS        = " -dng "
 
+#Download LuminanceHDR and point to the Install. Or add it to the path. You can swap out a different tool, but these settings are from using LumianceHDR
+HDR_TOOL_EXE                = "luminance-hdr-cli.exe"
+HDR_TOOL_ARGS               = "--autoag 1.0 --hdrWeight gaussian --align MTB"
+HDR_TOOL_TONE_MAP_ARGS      = "-q 90 --autolevels --tmo reinhard05 --tmoR05Brightness 0.0 --tmoR05Chroma 0.1 --tmoR05Lightness 1.0"
 
 ###############################################################################
 # Helpful functions
@@ -150,10 +155,38 @@ def get_directory_table(file_pointer,verbose):
         dir_table.append(entry)
         
     return dir_table
+  
+
+###############################################################################
+# Get Directory Table
+def process_hdr(file_list,EV_list,result_name,preview=False):
+    HDR_OUT_FILE        = result_name + ".EXR"
+    HDR_PREVIEW_FILE    = result_name + ".JPG"
+    HDR_IN_FILES        = ""
     
+    for i in file_list:
+        HDR_IN_FILES    = HDR_IN_FILES + " " + i
+        
+    for e in range (0,len(EV_list)):
+        if(e == 0):
+            HDR_EVS = str(EV_list[e])
+        else:
+            HDR_EVS = HDR_EVS + "," + str(EV_list[e])
+            
+    
+    HDR_CMD = HDR_TOOL_EXE + " " + HDR_TOOL_ARGS + " --ev " + HDR_EVS
+    if(preview):
+        HDR_CMD = HDR_CMD + " " + HDR_TOOL_TONE_MAP_ARGS + " -o " + HDR_PREVIEW_FILE
+    
+    HDR_CMD = HDR_CMD + " -s " + HDR_OUT_FILE + " " + HDR_IN_FILES
+    
+    
+    print(HDR_CMD)
+    os.system(HDR_CMD)
+  
 ###############################################################################
 # Extract the X3F's from the X3I
-def extract_x3i_file(x3i_file,x3f,tif,verbose):
+def extract_x3i_file(x3i_file,x3f=True,tif=False,dng=False,hdr=False,verbose=False):
     
     #Check the filename:
     input_extension = str(os.path.splitext(x3i_file)[1])
@@ -193,9 +226,15 @@ def extract_x3i_file(x3i_file,x3f,tif,verbose):
         index_list = index_str_list(frame_cnt)
         
         FRAME_INDEX = 0
+        DNG_LIST = []
+        X3F_LIST = []
+        EX_LIST = [0,-3,-2,-1,1,2,3]                            #TODO: This should be cacualted not hard coded. But whatever
         
         if(verbose):
             print("Exporting to Disk...")
+            
+        #Loop To Extract all the files. We do it in a loop so if a user doesn't want all the outputs possible
+        #We can erase them and save working disk space
         for x in range(0, len(dir_entry)):
             if dir_entry[x].dirtype == DIRECTORY_FRAM:          #If the DIR type is a FRAME process it
                 #Setup the Output Filename
@@ -209,18 +248,42 @@ def extract_x3i_file(x3i_file,x3f,tif,verbose):
                 x3i_file_handle     = open(X3F_FILE_NAME, 'wb')
                 x3i_file_handle.write(cur_x3i_data)
                 x3i_file_handle.close()
+                X3F_LIST.append(X3F_FILE_NAME)                  #Save the Filename we wrote out
                 #Handle Additional Conversions
-                if(tif == True):                                #Convert to a TIF if Requested
-                    X3F_CMD = X3F_EXTRACT_EXE + X3F_EXTRACT_ARGS + X3F_FILE_NAME
+                X3F_ARGS = ""
+                if(tif == True):
+                    X3F_ARGS = X3F_ARGS + X3F_EXTRACT_TIF_ARGS
+                if(hdr == True or dng == True):
+                    X3F_ARGS = X3F_ARGS + X3F_EXTRACT_DNG_ARGS
+                    DNG_LIST.append(X3F_FILE_NAME + ".dng")
+                    
+                if(tif == True or dng == True):  #Use X3F to convert                           
                     if(verbose):
-                        X3F_CMD = X3F_EXTRACT_EXE + X3F_EXTRACT_ARGS + " -v " + X3F_FILE_NAME
+                        X3F_CMD = X3F_EXTRACT_EXE + X3F_ARGS + " -v " + X3F_FILE_NAME
                         print(X3F_CMD)
                     else:
-                        X3F_CMD = X3F_EXTRACT_EXE + X3F_EXTRACT_ARGS + X3F_FILE_NAME
+                        X3F_CMD = X3F_EXTRACT_EXE + X3F_ARGS + X3F_FILE_NAME
                         
                     os.system(X3F_CMD)
-                    if(x3f == False):                           #Erase file if X3F isn't also True
-                        os.remove(X3F_FILE_NAME) 
+                    if(dng == True):
+                        if(x3f == False):                           #Erase file if X3F isn't also True
+                            os.remove(X3F_FILE_NAME) 
+        #Loop Finished
+        
+        #Is there an HDR list we want to do
+        if(hdr):
+            if(dng == True):
+                process_hdr(DNG_LIST,EX_LIST,base_fname,True)
+            else:
+                process_hdr(X3F_LIST,EX_LIST,base_fname,True)
+                #Clean Up Files
+                if(x3f == False):                                   #Erase file if X3F isn't also True
+                    for f in X3F_LIST:
+                        print(f)
+                        os.remove(f) 
+            
+    #We have finished processing for this X3I
+    return 1
 
 ###############################################################################
 # THE PROGRAM BEGINS
@@ -235,26 +298,50 @@ def main():
     parser.add_argument('--input','-i',nargs='*',required=True,      help='provide a file or a list of files (GLOB strings allows)')
     parser.add_argument('--tif',default=False,action='store_true',  help='Convert images to TIF. This requires the script to have a path to the x3f extract Util')
     parser.add_argument('--x3f',default=False,action='store_true',  help='save the X3F output')
+    parser.add_argument('--dng',default=False,action='store_true',  help='Use Hugin to Create an HDR single image')
+    parser.add_argument('--hdr',default=False,action='store_true',  help='Use Hugin to Create an HDR single image')
     parser.add_argument('--verbose','-v',default=False,action='store_true',  help='Verbose Output')
     args = parser.parse_args()
 
     IN_FILE_LIST    = get_file_list(args.input)
     OUT_TIFF        = args.tif
     OUT_X3F         = args.x3f
+    OUT_HDR         = args.hdr
+    OUT_DNG         = args.dng
     VERBOSE         = args.verbose
     
-    if(OUT_TIFF == True):
-        if(os.path.isfile(X3F_EXTRACT_EXE)):
-            pass;
-        else:
-            print("ERROR: output mode TIF set, but the path %s to the x3f conversion tool is not set correctly"%(X3F_EXTRACT_EXE))
+    #For HDR, this works on the Assumption that the Tool CAN support .X3F files. BUT because many tools support them wrong,
+    #If you have a fixed X3F Extract the DNG output can be used instead.
+    if(OUT_HDR == True):
+        #FIrst Check if we have an HDR tool:
+        if(os.path.isfile(HDR_TOOL_EXE) == False):
+            print("ERROR: There is no valid HDR tool set at %s, either add it to the PATH or modify the line for HDR_TOOL_EXE in this script"%(HDR_TOOL_EXE))
+            exit(-1)
+        #Check if -DNG is being used with it.
+        if(OUT_DNG == True):
+            if(os.path.isfile(X3F_EXTRACT_EXE) == False ):
+                print("ERROR: the DNG flag with the HDR flag implies to use DNG's for the HDR instead of X3F's.")
+                print("This requires that X3F_EXTRACT_EXE is either set in the script or in the PATH. It's Currently set to %s"%(X3F_EXTRACT_EXE))
+                exit(-1)
+            
+            
+    if(OUT_TIFF == True or OUT_DNG == True ):
+        if(os.path.isfile(X3F_EXTRACT_EXE) == False or os.path.isfile(HDR_TOOL_EXE) == False):
+            print("ERROR: output mode",end='')
+            if(OUT_TIFF):
+                print("TIFF ",end='')
+            if(OUT_DNG):
+                print("DNG ",end='')
+            print("but the path %s to the x3f conversion tool is not set correctly"%(X3F_EXTRACT_EXE))
+            print("This requires that X3F_EXTRACT_EXE is either set in the script or in the PATH. It's Currently set to %s"%(X3F_EXTRACT_EXE))
             exit(-1)
     else:
-        OUT_X3F = True
+        if(OUT_HDR != True):
+            OUT_X3F = True
           
     #For each X3F provided as input process it
     for f in IN_FILE_LIST:
-        extract_x3i_file(f,OUT_X3F,OUT_TIFF,VERBOSE)
+        extract_x3i_file(f,OUT_X3F,OUT_TIFF,OUT_DNG,OUT_HDR,VERBOSE)
         
     print("\nAll files completed\n")
         
